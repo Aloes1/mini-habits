@@ -288,6 +288,90 @@ h1 {
   overflow: hidden;
 }
 
+.spark {
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  align-items: end;
+  gap: 2px;
+  height: 28px;
+  margin-top: 10px;
+}
+
+.spark i {
+  display: block;
+  min-height: 3px;
+  border-radius: 3px 3px 2px 2px;
+  background: #efe8de;
+}
+
+.spark i.is-on {
+  background: var(--habit);
+}
+
+.overview {
+  margin-bottom: 14px;
+}
+
+.overview h3 {
+  margin-bottom: 10px;
+}
+
+.stack-chart {
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  gap: 5px;
+  align-items: end;
+  height: 132px;
+  margin: 8px 0 8px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  min-height: 8px;
+  border-radius: 9px 9px 6px 6px;
+  overflow: hidden;
+}
+
+.stack i {
+  display: block;
+  min-height: 6px;
+  border-radius: 3px;
+}
+
+.stack.is-empty {
+  height: 8px;
+  background: #efe8de;
+}
+
+.stack.is-today {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 12px;
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+}
+
 .hero-note {
   margin: 10px 0 0;
   font-size: 15px;

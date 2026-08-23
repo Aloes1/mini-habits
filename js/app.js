@@ -187,6 +187,51 @@ function allTotal(habit) {
     .reduce((sum, log) => sum + log.amount, 0);
 }
 
+function rangeDates(days) {
+  const end = todayISO();
+  return Array.from({ length: days }, (_, index) => addDays(end, index - (days - 1)));
+}
+
+function sparkBars(habit, days = 14) {
+  const dates = rangeDates(days);
+  const max = Math.max(...dates.map((date) => amountFor(habit.id, date)), 1);
+  return dates.map((date) => {
+    const amount = amountFor(habit.id, date);
+    const height = amount ? Math.max(18, Math.round((amount / max) * 100)) : 10;
+    return `<i class="${amount ? "is-on" : ""}" style="height:${height}%"></i>`;
+  }).join("");
+}
+
+function overviewChart(days = 14) {
+  const dates = rangeDates(days);
+  const maxByHabit = Object.fromEntries(
+    db.habits.map((habit) => [
+      habit.id,
+      Math.max(...dates.map((date) => amountFor(habit.id, date)), 1)
+    ])
+  );
+  const columns = dates.map((date) => {
+    const parts = db.habits
+      .map((habit) => {
+        const amount = amountFor(habit.id, date);
+        return {
+          color: habit.color,
+          share: amount > 0 ? amount / maxByHabit[habit.id] : 0
+        };
+      })
+      .filter((part) => part.share > 0);
+    return {
+      date,
+      parts,
+      total: parts.reduce((sum, part) => sum + part.share, 0)
+    };
+  });
+  return {
+    columns,
+    maxTotal: Math.max(...columns.map((column) => column.total), 1)
+  };
+}
+
 function show(view) {
   ui.view = view;
   ["home", "detail", "editor", "settings"].forEach((name) => {
@@ -206,6 +251,33 @@ function isStandalone() {
   return window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
 }
 
+function overviewHtml() {
+  if (!db.habits.length) return "";
+  const { columns, maxTotal } = overviewChart(14);
+  return `
+    <section class="panel overview">
+      <h3>Alle habits · 14 dagen</h3>
+      <div class="stack-chart">
+        ${columns.map((column) => {
+          if (!column.parts.length) return `<div class="stack is-empty"></div>`;
+          const height = Math.max(12, Math.round((column.total / maxTotal) * 100));
+          return `
+            <div class="stack ${column.date === todayISO() ? "is-today" : ""}" style="height:${height}%">
+              ${column.parts.map((part) => `<i style="flex:${Math.max(part.share, 0.08)};background:${part.color}"></i>`).join("")}
+            </div>
+          `;
+        }).join("")}
+      </div>
+      <div class="chart-labels">
+        ${columns.map((column) => `<span>${DAY_NAMES[fromISO(column.date).getDay()]}</span>`).join("")}
+      </div>
+      <div class="legend">
+        ${db.habits.map((habit) => `<span><i style="background:${habit.color}"></i>${esc(habit.name)}</span>`).join("")}
+      </div>
+    </section>
+  `;
+}
+
 function renderHome() {
   const week = currentWeek();
 
@@ -218,6 +290,7 @@ function renderHome() {
           <div class="habit-name">${esc(habit.name)}</div>
           <div class="habit-meta">${esc(lastText(habit))}</div>
           ${habit.note ? `<div class="habit-note">${esc(habit.note)}</div>` : ""}
+          <div class="spark" aria-hidden="true">${sparkBars(habit)}</div>
         </button>
         <div class="habit-side">
           <div class="count">
@@ -248,6 +321,7 @@ function renderHome() {
         </div>
       `).join("")}
     </div>
+    ${overviewHtml()}
     ${db.habits.length ? `<div class="list">${cards}</div>` : `
       <div class="empty">
         <div class="blobs">
