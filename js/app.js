@@ -8,13 +8,6 @@ const COLORS = [
   "#6366F1", "#7C5CFF", "#A855F7", "#E85DAB",
   "#F43F5E", "#FB7185", "#F97316", "#22D3EE"
 ];
-const UNITS = [
-  { id: "keer", label: "keer" },
-  { id: "minuten", label: "minuten" },
-  { id: "stuks", label: "stuks" },
-  { id: "check", label: "ja / nee" }
-];
-
 const $ = (id) => document.getElementById(id);
 
 let db = load();
@@ -31,7 +24,6 @@ function emptyDraft(habit) {
     id: habit?.id || null,
     name: habit?.name || "",
     note: habit?.note || "",
-    unit: habit?.unit || "keer",
     color: habit?.color || nextColor()
   };
 }
@@ -166,11 +158,8 @@ function lastText(habit) {
   return `${days} dagen geleden`;
 }
 
-function unitLabel(habit, amount) {
-  if (habit.unit === "check") return amount ? "gedaan" : "nog niet";
-  if (habit.unit === "minuten") return `${amount} min`;
-  if (habit.unit === "stuks") return `${amount}`;
-  return `${amount} keer`;
+function unitLabel(_habit, amount) {
+  return String(amount);
 }
 
 function startOfWeek(iso) {
@@ -333,8 +322,8 @@ function renderHome() {
             </div>
           ` : ""}
           <div class="count">
-            <b>${habit.unit === "check" ? (done ? "✓" : "–") : today}</b>
-            <span class="muted">${habit.unit === "check" ? "vandaag" : esc(habit.unit)}</span>
+            <b>${today || "–"}</b>
+            <span class="muted">vandaag</span>
           </div>
           <button type="button" class="plus ${done ? "is-on" : ""}" data-quick="${habit.id}" aria-label="Log vandaag">+</button>
         </div>
@@ -424,26 +413,15 @@ function renderDetail() {
       ${ui.date !== todayISO() ? `<button type="button" class="chip" data-today="1">Naar vandaag</button>` : ""}
     </section>
     <section class="amount-card" style="--habit:${habit.color}">
-      ${habit.unit === "check" ? `
-        <button type="button" class="check-btn ${amount ? "is-on" : ""}" data-check="1">${amount ? "Gedaan" : "Markeer als gedaan"}</button>
-      ` : `
-        <div class="amount">${amount}<small>${esc(habit.unit)}</small></div>
-        <div class="stepper">
-          <button type="button" class="step" data-delta="-1">−</button>
-          <input id="amount-input" inputmode="numeric" pattern="[0-9]*" value="${amount}" />
-          <button type="button" class="step" data-delta="1">+</button>
-        </div>
-        <div class="quick">
-          <button type="button" data-add="1">+1</button>
-          <button type="button" data-add="5">+5</button>
-          <button type="button" data-add="10">+10</button>
-          <button type="button" data-clear="1">wissen</button>
-        </div>
-      `}
+      <label class="field">
+        <span>Aantal</span>
+        <input id="amount-input" inputmode="decimal" value="${amount || ""}" placeholder="Typ het aantal" />
+      </label>
+      <button type="button" class="btn btn-color" data-save-amount="1" style="--habit:${habit.color};width:100%">Opslaan</button>
     </section>
     <div class="stats">
-      <div class="stat"><span class="muted">Deze week</span><b>${habit.unit === "check" ? weekTotal(habit) : unitLabel(habit, weekTotal(habit))}</b></div>
-      <div class="stat"><span class="muted">Totaal</span><b>${habit.unit === "check" ? allTotal(habit) : unitLabel(habit, allTotal(habit))}</b></div>
+      <div class="stat"><span class="muted">Deze week</span><b>${weekTotal(habit)}</b></div>
+      <div class="stat"><span class="muted">Totaal</span><b>${allTotal(habit)}</b></div>
     </div>
     <section class="panel">
       <h3>Laatste 14 dagen</h3>
@@ -499,12 +477,6 @@ function renderEditor() {
         <textarea name="note" maxlength="240" rows="3" placeholder="bijv. 3 sets, of 1 dag rust">${esc(draft.note)}</textarea>
       </div>
       <div class="field">
-        <span>Hoe wil je tellen?</span>
-        <div class="seg">
-          ${UNITS.map((unit) => `<button type="button" data-unit="${unit.id}" class="${draft.unit === unit.id ? "is-on" : ""}">${unit.label}</button>`).join("")}
-        </div>
-      </div>
-      <div class="field">
         <span>Kleur</span>
         <div class="colors">
           ${COLORS.map((color) => `<button type="button" data-color="${color}" class="${draft.color === color ? "is-on" : ""}" style="--swatch:${color}" aria-label="${color}"></button>`).join("")}
@@ -523,11 +495,10 @@ function renderEditor() {
       const habit = habitById(draft.id);
       habit.name = name;
       habit.note = note;
-      habit.unit = draft.unit;
       habit.color = draft.color;
       ui.justCreated = false;
     } else {
-      const habit = { id: uid(), name, note, unit: draft.unit, color: draft.color, createdAt: Date.now() };
+      const habit = { id: uid(), name, note, color: draft.color, createdAt: Date.now() };
       db.habits.push(habit);
       ui.habitId = habit.id;
       ui.justCreated = true;
@@ -620,11 +591,7 @@ document.addEventListener("click", (event) => {
     event.preventDefault();
     const habit = habitById(quickId);
     const today = todayISO();
-    if (habit.unit === "check") {
-      setAmount(habit.id, today, amountFor(habit.id, today) ? 0 : 1);
-    } else {
-      setAmount(habit.id, today, amountFor(habit.id, today) + 1);
-    }
+    setAmount(habit.id, today, amountFor(habit.id, today) + 1);
     renderHome();
   }
 
@@ -635,15 +602,9 @@ document.addEventListener("click", (event) => {
   }
 
   const form = $("habit-form");
-  if (form && event.target.closest("[data-unit], [data-color]")) {
+  if (form && event.target.closest("[data-color]")) {
     ui.draft.name = form.name.value;
     ui.draft.note = form.note.value;
-  }
-
-  const unit = event.target.closest("[data-unit]")?.dataset.unit;
-  if (unit) {
-    ui.draft.unit = unit;
-    renderEditor();
   }
 
   const color = event.target.closest("[data-color]")?.dataset.color;
@@ -669,28 +630,9 @@ document.addEventListener("click", (event) => {
     renderDetail();
   }
 
-  const delta = event.target.closest("[data-delta]")?.dataset.delta;
-  if (delta) {
-    const habit = habitById(ui.habitId);
-    setAmount(habit.id, ui.date, amountFor(habit.id, ui.date) + Number(delta));
-    renderDetail();
-  }
-
-  const add = event.target.closest("[data-add]")?.dataset.add;
-  if (add) {
-    const habit = habitById(ui.habitId);
-    setAmount(habit.id, ui.date, amountFor(habit.id, ui.date) + Number(add));
-    renderDetail();
-  }
-
-  if (event.target.closest("[data-clear]")) {
-    setAmount(ui.habitId, ui.date, 0);
-    renderDetail();
-  }
-
-  if (event.target.closest("[data-check]")) {
-    const current = amountFor(ui.habitId, ui.date);
-    setAmount(ui.habitId, ui.date, current ? 0 : 1);
+  if (event.target.closest("[data-save-amount]")) {
+    const input = $("amount-input");
+    setAmount(ui.habitId, ui.date, input ? input.value : 0);
     renderDetail();
   }
 

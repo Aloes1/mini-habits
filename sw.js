@@ -1,4 +1,4 @@
-const CACHE = "mini-v8";
+const CACHE = "mini-v9";
 const ASSETS = [
   "./",
   "./index.html",
