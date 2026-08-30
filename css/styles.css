@@ -237,11 +237,11 @@ h1 {
 .habit {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
   width: 100%;
-  padding: 16px 16px 16px 18px;
-  border-radius: 24px;
+  padding: 12px 12px 12px 16px;
+  border-radius: 22px;
   background: var(--card);
   box-shadow: var(--shadow);
   border: 1px solid var(--line);
@@ -265,10 +265,10 @@ h1 {
 }
 
 .habit-name {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
   letter-spacing: -0.03em;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .habit-meta, .muted {
@@ -293,8 +293,8 @@ h1 {
   grid-template-columns: repeat(14, 1fr);
   align-items: end;
   gap: 2px;
-  height: 28px;
-  margin-top: 10px;
+  height: 22px;
+  margin-top: 8px;
 }
 
 .spark i {
@@ -382,7 +382,27 @@ h1 {
 .habit-side {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+}
+
+.sort {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sort-btn {
+  width: 32px;
+  height: 28px;
+  border-radius: 10px;
+  background: #f4efe8;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.sort-btn:disabled {
+  opacity: 0.28;
 }
 
 .count {
@@ -398,9 +418,9 @@ h1 {
 }
 
 .plus {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   background: #fff;
   color: var(--habit);
   border: 2px solid var(--habit);

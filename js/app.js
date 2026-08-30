@@ -1,7 +1,12 @@
 const STORAGE_KEY = "mini.v1";
 const DAY_NAMES = ["zo", "ma", "di", "wo", "do", "vr", "za"];
 const MONTHS = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
-const COLORS = ["#FF5A36", "#FF9F1C", "#FFD166", "#3DDC97", "#2EC4B6", "#5B8CFF", "#7C5CFF", "#E85DAB"];
+const COLORS = [
+  "#FF5A36", "#FF9F1C", "#FFD166", "#84CC16",
+  "#3DDC97", "#2EC4B6", "#0EA5E9", "#5B8CFF",
+  "#6366F1", "#7C5CFF", "#A855F7", "#E85DAB",
+  "#F43F5E", "#FB7185", "#F97316", "#22D3EE"
+];
 const UNITS = [
   { id: "keer", label: "keer" },
   { id: "minuten", label: "minuten" },
@@ -172,7 +177,7 @@ function currentWeek() {
     const colors = db.habits
       .filter((habit) => amountFor(habit.id, date) > 0)
       .map((habit) => habit.color)
-      .slice(0, 3);
+      .slice(0, 5);
     return { date, colors };
   });
 }
@@ -232,6 +237,16 @@ function overviewChart(days = 14) {
   };
 }
 
+function moveHabit(id, dir) {
+  const index = db.habits.findIndex((habit) => habit.id === id);
+  const next = index + dir;
+  if (index < 0 || next < 0 || next >= db.habits.length) return;
+  const [habit] = db.habits.splice(index, 1);
+  db.habits.splice(next, 0, habit);
+  save();
+  renderHome();
+}
+
 function show(view) {
   ui.view = view;
   ["home", "detail", "editor", "settings"].forEach((name) => {
@@ -281,7 +296,7 @@ function overviewHtml() {
 function renderHome() {
   const week = currentWeek();
 
-  const cards = db.habits.map((habit) => {
+  const cards = db.habits.map((habit, index) => {
     const today = amountFor(habit.id, todayISO());
     const done = today > 0;
     return `
@@ -289,10 +304,15 @@ function renderHome() {
         <button type="button" data-open="${habit.id}">
           <div class="habit-name">${esc(habit.name)}</div>
           <div class="habit-meta">${esc(lastText(habit))}</div>
-          ${habit.note ? `<div class="habit-note">${esc(habit.note)}</div>` : ""}
           <div class="spark" aria-hidden="true">${sparkBars(habit)}</div>
         </button>
         <div class="habit-side">
+          ${db.habits.length > 1 ? `
+            <div class="sort">
+              <button type="button" class="sort-btn" data-move="${habit.id}" data-dir="-1" aria-label="Omhoog" ${index === 0 ? "disabled" : ""}>↑</button>
+              <button type="button" class="sort-btn" data-move="${habit.id}" data-dir="1" aria-label="Omlaag" ${index === db.habits.length - 1 ? "disabled" : ""}>↓</button>
+            </div>
+          ` : ""}
           <div class="count">
             <b>${habit.unit === "check" ? (done ? "✓" : "–") : today}</b>
             <span class="muted">${habit.unit === "check" ? "vandaag" : esc(habit.unit)}</span>
@@ -581,6 +601,12 @@ document.addEventListener("click", (event) => {
       setAmount(habit.id, today, amountFor(habit.id, today) + 1);
     }
     renderHome();
+  }
+
+  const moveBtn = event.target.closest("[data-move]");
+  if (moveBtn) {
+    event.preventDefault();
+    moveHabit(moveBtn.dataset.move, Number(moveBtn.dataset.dir));
   }
 
   const form = $("habit-form");
