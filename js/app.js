@@ -361,7 +361,10 @@ function renderHome() {
       `).join("")}
     </div>
     ${overviewHtml()}
-    ${db.habits.length ? `<button type="button" class="btn btn-ghost backup-quiet" data-export="1">Backup</button>` : ""}
+    <div class="row-btns backup-row">
+      <button type="button" class="btn btn-ghost" data-export="1">Backup maken</button>
+      <button type="button" class="btn btn-ghost" data-import="1">Backup terugzetten</button>
+    </div>
     ${db.habits.length ? `<div class="list">${cards}</div>` : `
       <div class="empty">
         <div class="blobs">
@@ -550,7 +553,6 @@ function renderSettings() {
       <p class="backup-meta">${esc(lastBackupLabel())}</p>
       <button type="button" class="btn btn-primary" data-export="1" style="width:100%">Backup maken</button>
       <button type="button" class="btn btn-ghost" data-import="1" style="width:100%;margin-top:8px">Backup terugzetten</button>
-      <input id="import-file" class="hidden-file" type="file" accept="application/json" />
     </section>
     <section class="settings-card">
       <h3>Op je beginscherm</h3>

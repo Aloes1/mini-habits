@@ -733,8 +733,7 @@ h1 {
   border-color: var(--ink);
 }
 
-.backup-quiet {
-  width: 100%;
+.backup-row {
   margin-bottom: 12px;
 }
 
