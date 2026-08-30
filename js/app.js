@@ -361,14 +361,7 @@ function renderHome() {
       `).join("")}
     </div>
     ${overviewHtml()}
-    ${db.habits.length ? `
-      <section class="warn">
-        <h3>Niet van je beginscherm halen</h3>
-        <p>Als je Mini van je beginscherm verwijdert, wist iPhone je habits. Maak een backup en bewaar die in Bestanden.</p>
-        <p class="backup-meta">${esc(lastBackupLabel())}</p>
-        <button type="button" class="btn btn-primary" data-export="1">Backup maken</button>
-      </section>
-    ` : ""}
+    ${db.habits.length ? `<button type="button" class="btn btn-ghost backup-quiet" data-export="1">Backup</button>` : ""}
     ${db.habits.length ? `<div class="list">${cards}</div>` : `
       <div class="empty">
         <div class="blobs">
@@ -389,7 +382,6 @@ function renderHome() {
           <li>Open deze pagina in <b>Safari</b></li>
           <li>Tik op het deel-icoon</li>
           <li>Kies <b>Zet op beginscherm</b></li>
-          <li>Haal Mini daarna <b>niet</b> van je beginscherm: dan is je data weg</li>
         </ol>
       </div>
     ` : `<div style="height:84px"></div>`}
@@ -553,13 +545,8 @@ function renderSettings() {
     <button type="button" class="back" data-go="home">← Overzicht</button>
     <p class="kicker">Mini</p>
     <h1>Instellingen</h1>
-    <section class="warn" style="margin-top:16px">
-      <h3>Let op: je data zit op deze iPhone</h3>
-      <p>Verwijder Mini <b>niet</b> van je beginscherm. Dan wist iPhone je habits, aantallen en notities. Safari heeft geen kopie.</p>
-    </section>
-    <section class="settings-card">
+    <section class="settings-card" style="margin-top:16px">
       <h3>Backup</h3>
-      <p>Bewaar een kopie in Bestanden of iCloud. Zet die later terug als er iets misgaat.</p>
       <p class="backup-meta">${esc(lastBackupLabel())}</p>
       <button type="button" class="btn btn-primary" data-export="1" style="width:100%">Backup maken</button>
       <button type="button" class="btn btn-ghost" data-import="1" style="width:100%;margin-top:8px">Backup terugzetten</button>
@@ -572,7 +559,6 @@ function renderSettings() {
         <li>Tik op het vierkantje met het pijltje</li>
         <li>Scroll naar <b>Zet op beginscherm</b></li>
         <li>Tik op Voeg toe</li>
-        <li>Haal het icoon daarna niet weg</li>
       </ol>
     </section>
     <section class="settings-card">

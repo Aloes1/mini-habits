@@ -733,37 +733,14 @@ h1 {
   border-color: var(--ink);
 }
 
-.warn {
-  background: #fff1f2;
-  border: 1px solid #fecdd3;
-  border-radius: 24px;
-  padding: 16px 16px 14px;
-  margin-bottom: 14px;
-  box-shadow: var(--shadow);
-}
-
-.warn h3 {
-  color: #9f1239;
-  font-size: 16px;
-  letter-spacing: -0.02em;
-}
-
-.warn p {
-  color: #9f1239;
-  line-height: 1.45;
-  margin: 8px 0 0;
-  padding-left: 0;
+.backup-quiet {
+  width: 100%;
+  margin-bottom: 12px;
 }
 
 .backup-meta {
   font-size: 13px;
   font-weight: 700;
-  opacity: 0.78;
-}
-
-.warn .btn {
-  width: 100%;
-  margin-top: 12px;
 }
 
 .btn-home {
