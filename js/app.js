@@ -24,6 +24,7 @@ function emptyDraft(habit) {
     id: habit?.id || null,
     name: habit?.name || "",
     note: habit?.note || "",
+    amount: "",
     color: habit?.color || nextColor()
   };
 }
@@ -52,14 +53,27 @@ function lastBackupLabel() {
   return `Laatste backup: ${formatLong(iso)}`;
 }
 
-function exportBackup() {
-  const blob = new Blob([JSON.stringify({ habits: db.habits, logs: db.logs }, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
+async function exportBackup() {
+  const json = JSON.stringify({ habits: db.habits, logs: db.logs }, null, 2);
+  const filename = `mini-backup-${todayISO()}.json`;
+  const file = new File([json], filename, { type: "application/json" });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: "Mini backup" });
+      localStorage.setItem(BACKUP_AT_KEY, todayISO());
+      return;
+    }
+  } catch (error) {
+    if (error && error.name === "AbortError") return;
+  }
+  const url = URL.createObjectURL(file);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `mini-backup-${todayISO()}.json`;
+  link.download = filename;
+  document.body.appendChild(link);
   link.click();
-  URL.revokeObjectURL(url);
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
   localStorage.setItem(BACKUP_AT_KEY, todayISO());
 }
 
@@ -306,7 +320,6 @@ function renderHome() {
 
   const cards = db.habits.map((habit, index) => {
     const today = amountFor(habit.id, todayISO());
-    const done = today > 0;
     return `
       <article class="habit" style="--habit:${habit.color}">
         <button type="button" data-open="${habit.id}">
@@ -325,7 +338,6 @@ function renderHome() {
             <b>${today || "–"}</b>
             <span class="muted">vandaag</span>
           </div>
-          <button type="button" class="plus ${done ? "is-on" : ""}" data-quick="${habit.id}" aria-label="Log vandaag">+</button>
         </div>
       </article>
     `;
@@ -351,7 +363,7 @@ function renderHome() {
     </div>
     ${overviewHtml()}
     <div class="row-btns backup-row">
-      <button type="button" class="btn btn-ghost" data-export="1">Backup maken</button>
+      <button type="button" class="btn btn-ghost" data-export="1">Backup downloaden</button>
       <button type="button" class="btn btn-ghost" data-import="1">Backup terugzetten</button>
     </div>
     ${db.habits.length ? `<div class="list">${cards}</div>` : `
@@ -476,6 +488,12 @@ function renderEditor() {
         <span>Notitie</span>
         <textarea name="note" maxlength="240" rows="3" placeholder="bijv. 3 sets, of 1 dag rust">${esc(draft.note)}</textarea>
       </div>
+      ${draft.id ? "" : `
+      <div class="field">
+        <span>Aantal vandaag (optioneel)</span>
+        <input name="amount" inputmode="decimal" placeholder="Typ het aantal" value="${esc(draft.amount || "")}" />
+      </div>
+      `}
       <div class="field">
         <span>Kleur</span>
         <div class="colors">
@@ -497,20 +515,20 @@ function renderEditor() {
       habit.note = note;
       habit.color = draft.color;
       ui.justCreated = false;
-    } else {
-      const habit = { id: uid(), name, note, color: draft.color, createdAt: Date.now() };
-      db.habits.push(habit);
-      ui.habitId = habit.id;
-      ui.justCreated = true;
-    }
-    save();
-    if (draft.id || ui.habitId) {
+      save();
       show("detail");
       renderDetail();
-    } else {
-      show("home");
-      renderHome();
+      return;
     }
+    const habit = { id: uid(), name, note, color: draft.color, createdAt: Date.now() };
+    db.habits.push(habit);
+    const amount = event.target.amount?.value;
+    if (amount) setAmount(habit.id, todayISO(), amount);
+    else save();
+    ui.habitId = habit.id;
+    ui.justCreated = false;
+    show("home");
+    renderHome();
   });
 }
 
@@ -522,7 +540,7 @@ function renderSettings() {
     <section class="settings-card" style="margin-top:16px">
       <h3>Backup</h3>
       <p class="backup-meta">${esc(lastBackupLabel())}</p>
-      <button type="button" class="btn btn-primary" data-export="1" style="width:100%">Backup maken</button>
+      <button type="button" class="btn btn-primary" data-export="1" style="width:100%">Backup downloaden</button>
       <button type="button" class="btn btn-ghost" data-import="1" style="width:100%;margin-top:8px">Backup terugzetten</button>
     </section>
     <section class="settings-card">
@@ -586,15 +604,6 @@ document.addEventListener("click", (event) => {
     renderDetail();
   }
 
-  const quickId = event.target.closest("[data-quick]")?.dataset.quick;
-  if (quickId) {
-    event.preventDefault();
-    const habit = habitById(quickId);
-    const today = todayISO();
-    setAmount(habit.id, today, amountFor(habit.id, today) + 1);
-    renderHome();
-  }
-
   const moveBtn = event.target.closest("[data-move]");
   if (moveBtn) {
     event.preventDefault();
@@ -605,6 +614,7 @@ document.addEventListener("click", (event) => {
   if (form && event.target.closest("[data-color]")) {
     ui.draft.name = form.name.value;
     ui.draft.note = form.note.value;
+    if (form.amount) ui.draft.amount = form.amount.value;
   }
 
   const color = event.target.closest("[data-color]")?.dataset.color;
@@ -685,5 +695,5 @@ document.addEventListener("change", (event) => {
 renderHome();
 
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("./sw.js").catch(() => {});
+  navigator.serviceWorker.register("./sw.js?v=10").catch(() => {});
 }
