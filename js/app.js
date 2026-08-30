@@ -1,4 +1,5 @@
 const STORAGE_KEY = "mini.v1";
+const BACKUP_AT_KEY = "mini.backup-at";
 const DAY_NAMES = ["zo", "ma", "di", "wo", "do", "vr", "za"];
 const MONTHS = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
 const COLORS = [
@@ -21,7 +22,8 @@ let ui = {
   view: "home",
   habitId: null,
   date: todayISO(),
-  draft: emptyDraft()
+  draft: emptyDraft(),
+  justCreated: false
 };
 
 function emptyDraft(habit) {
@@ -49,7 +51,24 @@ function load() {
 }
 
 function save() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ habits: db.habits, logs: db.logs }));
+}
+
+function lastBackupLabel() {
+  const iso = localStorage.getItem(BACKUP_AT_KEY);
+  if (!iso) return "Nog geen backup gemaakt";
+  return `Laatste backup: ${formatLong(iso)}`;
+}
+
+function exportBackup() {
+  const blob = new Blob([JSON.stringify({ habits: db.habits, logs: db.logs }, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `mini-backup-${todayISO()}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+  localStorage.setItem(BACKUP_AT_KEY, todayISO());
 }
 
 function uid() {
@@ -342,6 +361,14 @@ function renderHome() {
       `).join("")}
     </div>
     ${overviewHtml()}
+    ${db.habits.length ? `
+      <section class="warn">
+        <h3>Niet van je beginscherm halen</h3>
+        <p>Als je Mini van je beginscherm verwijdert, wist iPhone je habits. Maak een backup en bewaar die in Bestanden.</p>
+        <p class="backup-meta">${esc(lastBackupLabel())}</p>
+        <button type="button" class="btn btn-primary" data-export="1">Backup maken</button>
+      </section>
+    ` : ""}
     ${db.habits.length ? `<div class="list">${cards}</div>` : `
       <div class="empty">
         <div class="blobs">
@@ -356,12 +383,13 @@ function renderHome() {
     `}
     ${db.habits.length ? `<button type="button" class="fab" data-go="new"><span>+</span> Habit</button>` : ""}
     ${!isStandalone() ? `
-      <div class="tip" style="margin-top:84px">
+      <div class="tip" style="margin-top:${db.habits.length ? "12px" : "84px"}">
         <h3>Op je iPhone zetten</h3>
         <ol>
           <li>Open deze pagina in <b>Safari</b></li>
           <li>Tik op het deel-icoon</li>
           <li>Kies <b>Zet op beginscherm</b></li>
+          <li>Haal Mini daarna <b>niet</b> van je beginscherm: dan is je data weg</li>
         </ol>
       </div>
     ` : `<div style="height:84px"></div>`}
@@ -386,6 +414,9 @@ function renderDetail() {
 
   $("view-detail").innerHTML = `
     <button type="button" class="back" data-go="home">← Overzicht</button>
+    ${ui.justCreated ? `
+      <button type="button" class="btn btn-primary btn-home" data-go="home">Terug naar overzicht</button>
+    ` : ""}
     <section class="hero" style="background:${habit.color}">
       <p class="kicker">${esc(lastText(habit))}</p>
       <h1>${esc(habit.name)}</h1>
@@ -499,10 +530,12 @@ function renderEditor() {
       habit.note = note;
       habit.unit = draft.unit;
       habit.color = draft.color;
+      ui.justCreated = false;
     } else {
       const habit = { id: uid(), name, note, unit: draft.unit, color: draft.color, createdAt: Date.now() };
       db.habits.push(habit);
       ui.habitId = habit.id;
+      ui.justCreated = true;
     }
     save();
     if (draft.id || ui.habitId) {
@@ -520,23 +553,27 @@ function renderSettings() {
     <button type="button" class="back" data-go="home">← Overzicht</button>
     <p class="kicker">Mini</p>
     <h1>Instellingen</h1>
-    <section class="settings-card" style="margin-top:16px">
+    <section class="warn" style="margin-top:16px">
+      <h3>Let op: je data zit op deze iPhone</h3>
+      <p>Verwijder Mini <b>niet</b> van je beginscherm. Dan wist iPhone je habits, aantallen en notities. Safari heeft geen kopie.</p>
+    </section>
+    <section class="settings-card">
+      <h3>Backup</h3>
+      <p>Bewaar een kopie in Bestanden of iCloud. Zet die later terug als er iets misgaat.</p>
+      <p class="backup-meta">${esc(lastBackupLabel())}</p>
+      <button type="button" class="btn btn-primary" data-export="1" style="width:100%">Backup maken</button>
+      <button type="button" class="btn btn-ghost" data-import="1" style="width:100%;margin-top:8px">Backup terugzetten</button>
+      <input id="import-file" class="hidden-file" type="file" accept="application/json" />
+    </section>
+    <section class="settings-card">
       <h3>Op je beginscherm</h3>
       <ol>
         <li>Open Mini in Safari</li>
         <li>Tik op het vierkantje met het pijltje</li>
         <li>Scroll naar <b>Zet op beginscherm</b></li>
-        <li>Tik op Voeg toe. Klaar: een app-icoon, zonder App Store</li>
+        <li>Tik op Voeg toe</li>
+        <li>Haal het icoon daarna niet weg</li>
       </ol>
-    </section>
-    <section class="settings-card">
-      <h3>Jouw data</h3>
-      <p>Alles blijft op deze iPhone. Maak af en toe een backup, voor het geval je Safari-gegevens wist.</p>
-      <div class="row-btns">
-        <button type="button" class="btn btn-primary" data-export="1">Backup</button>
-        <button type="button" class="btn btn-ghost" data-import="1">Terugzetten</button>
-      </div>
-      <input id="import-file" class="hidden-file" type="file" accept="application/json" />
     </section>
     <section class="settings-card">
       <h3>Kleine regel</h3>
@@ -573,7 +610,7 @@ $("modal-cancel").onclick = () => {
 document.addEventListener("click", (event) => {
   if (!(event.target instanceof Element)) return;
   const go = event.target.closest("[data-go]")?.dataset.go;
-  if (go === "home") { show("home"); renderHome(); }
+  if (go === "home") { ui.justCreated = false; show("home"); renderHome(); }
   if (go === "detail") { show("detail"); renderDetail(); }
   if (go === "settings") { show("settings"); renderSettings(); }
   if (go === "new") {
@@ -680,13 +717,9 @@ document.addEventListener("click", (event) => {
   if (deleteId) confirmDelete(habitById(deleteId));
 
   if (event.target.closest("[data-export]")) {
-    const blob = new Blob([JSON.stringify(db, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `mini-backup-${todayISO()}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+    exportBackup();
+    if (ui.view === "home") renderHome();
+    if (ui.view === "settings") renderSettings();
   }
 
   if (event.target.closest("[data-import]")) {

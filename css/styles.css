@@ -733,6 +733,46 @@ h1 {
   border-color: var(--ink);
 }
 
+.warn {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: 24px;
+  padding: 16px 16px 14px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow);
+}
+
+.warn h3 {
+  color: #9f1239;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+.warn p {
+  color: #9f1239;
+  line-height: 1.45;
+  margin: 8px 0 0;
+  padding-left: 0;
+}
+
+.backup-meta {
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.78;
+}
+
+.warn .btn {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.btn-home {
+  width: 100%;
+  margin: 0 0 14px;
+  min-height: 56px;
+  font-size: 17px;
+}
+
 .tip, .settings-card {
   background: var(--card);
   border-radius: 24px;
@@ -746,6 +786,11 @@ h1 {
   line-height: 1.5;
   padding-left: 18px;
   margin: 8px 0 0;
+}
+
+.settings-card > p,
+.settings-card .backup-meta {
+  padding-left: 0;
 }
 
 .hidden-file {
